@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { isAuthed } from "@/lib/auth";
 import { getAdminData, rowsToCsv } from "@/lib/admin";
+import { DEMO_DB_MESSAGE } from "@/lib/demo";
 
 export const dynamic = "force-dynamic";
 
@@ -8,13 +9,17 @@ export async function GET() {
   if (!isAuthed()) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const { rows } = await getAdminData();
-  const csv = rowsToCsv(rows);
-  const date = new Date().toISOString().slice(0, 10);
-  return new NextResponse(csv, {
-    headers: {
-      "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="rsvps-${date}.csv"`,
-    },
-  });
+  try {
+    const { rows } = await getAdminData();
+    const csv = rowsToCsv(rows);
+    const date = new Date().toISOString().slice(0, 10);
+    return new NextResponse(csv, {
+      headers: {
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": `attachment; filename="rsvps-${date}.csv"`,
+      },
+    });
+  } catch {
+    return NextResponse.json({ demo: true, error: DEMO_DB_MESSAGE }, { status: 503 });
+  }
 }
