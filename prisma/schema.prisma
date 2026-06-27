@@ -1,0 +1,65 @@
+// Prisma schema — Premium Wedding Website
+//
+// Demo runs on SQLite for zero-config. For production, switch `provider` to
+// "postgresql" and point DATABASE_URL at Supabase. The models are unchanged.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Note: SQLite (demo) does not support Prisma enums. `Rsvp.status` is a string
+// constrained at the app layer to "PENDING" | "YES" | "NO". On Postgres you may
+// promote it to a native enum if desired.
+
+model Guest {
+  id           String        @id @default(cuid())
+  name         String
+  email        String?
+  inviteCode   String        @unique
+  partySize    Int           @default(1)
+  rsvp         Rsvp?
+  reservations Reservation[]
+  createdAt    DateTime      @default(now())
+}
+
+model Rsvp {
+  id             String     @id @default(cuid())
+  guest          Guest      @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  guestId        String   @unique
+  status         String   @default("PENDING")
+  mealPreference String?
+  plusOnes       Int      @default(0)
+  note           String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Table {
+  id           String        @id @default(cuid())
+  name         String
+  capacity     Int
+  // Layout coordinates for the visual floor plan (0–100 grid units).
+  x            Float         @default(50)
+  y            Float         @default(50)
+  reservations Reservation[]
+}
+
+model Reservation {
+  id        String   @id @default(cuid())
+  guest     Guest    @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  guestId   String
+  table     Table    @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  tableId   String
+  seatLabel String
+  createdAt DateTime @default(now())
+
+  @@unique([tableId, seatLabel])
+}
+
+// Stores the admin session passcode hash check is handled at the app layer;
+// no model needed for the demo gate.
